@@ -1,9 +1,15 @@
 import json
-from pathlib import Path
+import os
 
 from flask import Flask, g, jsonify, render_template
 
 from db import DB_PATH, get_connection
+
+if not DB_PATH.exists():
+    # Fresh deploy / ephemeral filesystem (e.g. Render) — build the DB from
+    # the xlsx + seed content on first boot instead of failing to start.
+    import seed
+    seed.main()
 
 app = Flask(__name__)
 
@@ -84,7 +90,6 @@ def api_chapters():
 
 
 if __name__ == "__main__":
-    if not Path(DB_PATH).exists():
-        print("No database found — run `python seed.py` first.")
-    else:
-        app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)
